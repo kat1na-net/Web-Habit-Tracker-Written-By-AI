@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Berkeley+Mono:ital,wght@0,100..700;1,100..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text-primary: #e6edf3;
+    --text-secondary: #7d8590;
+    --text-muted: #484f58;
+    --accent: #39d353;
+    --accent-dim: #26a641;
+    --accent-dimmer: #006d32;
+    --accent-dimmest: #0e4429;
+    --empty: #161b22;
+    --font-mono: 'Berkeley Mono', 'Courier New', monospace;
+    --font-serif: 'Instrument Serif', Georgia, serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    padding: 48px 32px;
+  }
+
+  header {
+    max-width: 960px;
+    margin: 0 auto 48px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+  }
+
+  .header-left h1 {
+    font-family: var(--font-serif);
+    font-size: 2.4rem;
+    font-weight: 400;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .header-left p {
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  .header-right span {
+    color: var(--accent);
+  }
+
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-sub {
+    font-size: 10px;
+    color: var(--text-secondary);
+  }
+
+  /* Heatmap section */
+  .heatmap-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+
+  .section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .heatmap-wrapper {
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .heatmap-container {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    min-width: fit-content;
+  }
+
+  .month-labels-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 4px;
+    padding-left: 32px;
+  }
+
+  .heatmap-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .day-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-right: 4px;
+    padding-top: 0;
+  }
+
+  .day-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    height: 13px;
+    line-height: 13px;
+    width: 24px;
+    text-align: right;
+  }
+
+  .weeks-grid {
+    display: flex;
+    gap: 4px;
+  }
+
+  .week-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .month-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .day-cell {
+    width: 13px;
+    height: 13px;
+    border-radius: 2px;
+    background: var(--empty);
+    border: 1px solid rgba(48, 54, 61, 0.5);
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.1s, border-color 0.1s;
+    flex-shrink: 0;
+  }
+
+  .day-cell:hover {
+    transform: scale(1.4);
+    border-color: rgba(240, 246, 252, 0.3);
+    z-index: 10;
+  }
+
+  .day-cell.level-0 { background: #161b22; }
+  .day-cell.level-1 { background: #0e4429; }
+  .day-cell.level-2 { background: #006d32; }
+  .day-cell.level-3 { background: #26a641; }
+  .day-cell.level-4 { background: #39d353; }
+  .day-cell.future  { background: #0d1117; border-color: rgba(48,54,61,0.2); cursor: default; }
+  .day-cell.today   { border-color: rgba(240, 246, 252, 0.6) !important; }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed;
+    background: #1c2128;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 11px;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.15s;
+    max-width: 220px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  .tooltip.visible { opacity: 1; }
+
+  .tooltip-date {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .habit-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+
+  .habit-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .habit-dot.done { background: var(--accent); }
+  .habit-dot.missed { background: var(--text-muted); }
+
+  .habit-name { color: var(--text-primary); }
+  .habit-name.missed { color: var(--text-muted); text-decoration: line-through; }
+
+  .tooltip-score {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--text-secondary);
+  }
+
+  .tooltip-score span { color: var(--accent); }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+    font-size: 10px;
+    color: var(--text-muted);
+    justify-content: flex-end;
+  }
+
+  .legend-cell {
+    width: 13px;
+    height: 13px;
+    border-radius: 2px;
+    border: 1px solid rgba(48,54,61,0.5);
+  }
+
+  /* Habit list */
+  .habits-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+
+  .habits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .habit-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .habit-color-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .habit-card-name {
+    font-size: 12px;
+    color: var(--text-primary);
+    flex: 1;
+  }
+
+  .habit-card-streak {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .habit-card-streak span {
+    color: var(--accent);
+  }
+
+  /* JSON docs */
+  .docs-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+  }
+
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    margin-top: 12px;
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .code-block .key { color: #79c0ff; }
+  .code-block .string { color: #a5d6ff; }
+  .code-block .num { color: #f0883e; }
+  .code-block .comment { color: var(--text-muted); font-style: italic; }
+
+  .no-data {
+    text-align: center;
+    padding: 48px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 2;
+  }
+
+  .no-data strong {
+    display: block;
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  @media (max-width: 600px) {
+    body { padding: 24px 16px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .header-right { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Habit Tracker</h1>
+    <p>Consistency &amp; progress log</p>
+  </div>
+  <div class="header-right" id="header-meta">
+    Loading habits.json...
+  </div>
+</header>
+
+<main>
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card"><div class="stat-label">Current streak</div><div class="stat-value" id="stat-streak">—</div><div class="stat-sub">days</div></div>
+    <div class="stat-card"><div class="stat-label">Best streak</div><div class="stat-value" id="stat-best">—</div><div class="stat-sub">days</div></div>
+    <div class="stat-card"><div class="stat-label">Days logged</div><div class="stat-value" id="stat-logged">—</div><div class="stat-sub">this year</div></div>
+    <div class="stat-card"><div class="stat-label">Completion rate</div><div class="stat-value" id="stat-rate">—</div><div class="stat-sub">avg per day logged</div></div>
+  </div>
+
+  <div class="heatmap-section">
+    <div class="section-title">contributions this year</div>
+    <div class="heatmap-wrapper">
+      <div id="month-labels-row" style="display:flex;gap:4px;margin-bottom:4px;padding-left:28px;"></div>
+      <div style="display:flex;gap:4px;align-items:flex-start;">
+        <div class="day-labels">
+          <div class="day-label"></div>
+          <div class="day-label">Mon</div>
+          <div class="day-label"></div>
+          <div class="day-label">Wed</div>
+          <div class="day-label"></div>
+          <div class="day-label">Fri</div>
+          <div class="day-label"></div>
+        </div>
+        <div class="weeks-grid" id="heatmap-grid"></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span>Less</span>
+      <div class="legend-cell level-0" style="background:#161b22;"></div>
+      <div class="legend-cell" style="background:#0e4429;border-color:rgba(48,54,61,0.5);width:13px;height:13px;border-radius:2px;"></div>
+      <div class="legend-cell" style="background:#006d32;border-color:rgba(48,54,61,0.5);width:13px;height:13px;border-radius:2px;"></div>
+      <div class="legend-cell" style="background:#26a641;border-color:rgba(48,54,61,0.5);width:13px;height:13px;border-radius:2px;"></div>
+      <div class="legend-cell" style="background:#39d353;border-color:rgba(48,54,61,0.5);width:13px;height:13px;border-radius:2px;"></div>
+      <span>More</span>
+    </div>
+  </div>
+
+  <div class="habits-section">
+    <div class="section-title">tracked habits</div>
+    <div class="habits-grid" id="habits-grid"></div>
+  </div>
+
+  <div class="docs-section">
+    <div class="section-title">habits.json format</div>
+    <div class="code-block"><span class="comment">// habits.json — place in same directory as index.html</span>
+{
+  <span class="key">"habits"</span>: [<span class="string">"Thesis"</span>, <span class="string">"HTB/LabShock"</span>, <span class="string">"Pentest+ Study"</span>, <span class="string">"Exercise"</span>],
+
+  <span class="key">"log"</span>: {
+    <span class="comment">// date format: YYYY-MM-DD</span>
+    <span class="string">"2025-03-19"</span>: [<span class="string">"Thesis"</span>, <span class="string">"Exercise"</span>],
+    <span class="string">"2025-03-20"</span>: [<span class="string">"Thesis"</span>, <span class="string">"HTB/LabShock"</span>, <span class="string">"Pentest+ Study"</span>, <span class="string">"Exercise"</span>],
+    <span class="string">"2025-03-21"</span>: [<span class="string">"Thesis"</span>, <span class="string">"Pentest+ Study"</span>]
+  }
+}</div>
+  </div>
+</main>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const HABIT_COLORS = [
+  '#39d353','#58a6ff','#f78166','#d2a8ff',
+  '#ffa657','#79c0ff','#ff7b72','#7ee787'
+];
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+let habitData = { habits: [], log: {} };
+let habitColors = {};
+
+async function loadData() {
+  try {
+    const res = await fetch('./habits.json');
+    if (!res.ok) throw new Error('not found');
+    habitData = await res.json();
+  } catch(e) {
+    // use demo data if no file found
+    habitData = getDemoData();
+  }
+  init();
+}
+
+function getDemoData() {
+  const habits = ['Thesis','HTB/LabShock','Pentest+ Study','RF Prep','Exercise'];
+  const log = {};
+  const today = new Date();
+  for (let i = 180; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    if (d > today) continue;
+    const key = formatDate(d);
+    const count = Math.random();
+    if (count < 0.25) continue;
+    const done = habits.filter(() => Math.random() > 0.35);
+    if (done.length > 0) log[key] = done;
+  }
+  return { habits, log };
+}
+
+function formatDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function parseDate(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function init() {
+  habitData.habits.forEach((h, i) => {
+    habitColors[h] = HABIT_COLORS[i % HABIT_COLORS.length];
+  });
+
+  buildHeatmap();
+  buildStats();
+  buildHabitCards();
+  updateMeta();
+}
+
+function buildHeatmap() {
+  const grid = document.getElementById('heatmap-grid');
+  const monthRow = document.getElementById('month-labels-row');
+  grid.innerHTML = '';
+  monthRow.innerHTML = '';
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  // Start from the Sunday of the week 52 weeks ago
+  const start = new Date(today);
+  start.setDate(start.getDate() - 364);
+  // back to Sunday
+  start.setDate(start.getDate() - start.getDay());
+
+  let currentMonth = -1;
+  let weekIndex = 0;
+
+  const end = new Date(today);
+  end.setDate(end.getDate() + (6 - end.getDay())); // end of current week
+
+  let cursor = new Date(start);
+
+  while (cursor <= end) {
+    const weekCol = document.createElement('div');
+    weekCol.className = 'week-col';
+
+    // Month label placeholder
+    const monthOfFirstDay = cursor.getMonth();
+    if (monthOfFirstDay !== currentMonth && cursor.getDay() === 0) {
+      const lbl = document.createElement('div');
+      lbl.style.cssText = `font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;height:16px;line-height:16px;width:13px;white-space:nowrap;`;
+      lbl.textContent = MONTHS[monthOfFirstDay];
+      monthRow.appendChild(lbl);
+      currentMonth = monthOfFirstDay;
+    } else {
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'width:13px;height:16px;flex-shrink:0;';
+      monthRow.appendChild(lbl);
+    }
+
+    for (let d = 0; d < 7; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'day-cell';
+
+      const cellDate = new Date(cursor);
+      cellDate.setDate(cursor.getDate() + d);
+      const dateStr = formatDate(cellDate);
+
+      if (cellDate > today) {
+        cell.classList.add('future');
+      } else {
+        const done = habitData.log[dateStr] || [];
+        const total = habitData.habits.length;
+        const level = total === 0 ? 0 : Math.ceil((done.length / total) * 4);
+        cell.classList.add(`level-${level}`);
+
+        if (formatDate(cellDate) === formatDate(today)) {
+          cell.classList.add('today');
+        }
+
+        cell.addEventListener('mouseenter', (e) => showTooltip(e, dateStr, done, cellDate));
+        cell.addEventListener('mouseleave', hideTooltip);
+        cell.addEventListener('mousemove', moveTooltip);
+      }
+
+      weekCol.appendChild(cell);
+    }
+
+    grid.appendChild(weekCol);
+    cursor.setDate(cursor.getDate() + 7);
+    weekIndex++;
+  }
+}
+
+function showTooltip(e, dateStr, done, date) {
+  const tooltip = document.getElementById('tooltip');
+  const total = habitData.habits.length;
+
+  const dateLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  let html = `<div class="tooltip-date">${dateLabel}</div>`;
+
+  if (total === 0) {
+    html += `<div style="color:var(--text-muted);font-size:11px;">No habits configured</div>`;
+  } else if (done.length === 0) {
+    html += `<div style="color:var(--text-muted);font-size:11px;">No habits logged</div>`;
+  } else {
+    habitData.habits.forEach(h => {
+      const isDone = done.includes(h);
+      html += `<div class="habit-item">
+        <div class="habit-dot ${isDone ? 'done' : 'missed'}" style="${isDone ? `background:${habitColors[h]}` : ''}"></div>
+        <span class="habit-name ${isDone ? '' : 'missed'}">${h}</span>
+      </div>`;
+    });
+    html += `<div class="tooltip-score">${done.length} / ${total} habits — <span>${Math.round((done.length/total)*100)}%</span></div>`;
+  }
+
+  tooltip.innerHTML = html;
+  tooltip.classList.add('visible');
+  moveTooltip(e);
+}
+
+function moveTooltip(e) {
+  const tooltip = document.getElementById('tooltip');
+  const tw = tooltip.offsetWidth;
+  const th = tooltip.offsetHeight;
+  let x = e.clientX + 14;
+  let y = e.clientY - th / 2;
+  if (x + tw > window.innerWidth - 8) x = e.clientX - tw - 14;
+  if (y < 8) y = 8;
+  if (y + th > window.innerHeight - 8) y = window.innerHeight - th - 8;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+
+function hideTooltip() {
+  document.getElementById('tooltip').classList.remove('visible');
+}
+
+function buildStats() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const year = today.getFullYear();
+
+  const entries = Object.entries(habitData.log)
+    .filter(([d]) => d.startsWith(String(year)))
+    .sort(([a],[b]) => a.localeCompare(b));
+
+  const total = habitData.habits.length;
+
+  // Logged days
+  document.getElementById('stat-logged').textContent = entries.length;
+
+  // Avg completion
+  if (entries.length > 0 && total > 0) {
+    const avg = entries.reduce((s,[,d]) => s + d.length, 0) / entries.length / total;
+    document.getElementById('stat-rate').textContent = Math.round(avg * 100) + '%';
+  }
+
+  // Streaks — a day counts if at least 1 habit done
+  const logDates = new Set(Object.keys(habitData.log));
+  let streak = 0, best = 0, cur = 0;
+  const check = new Date(today);
+
+  // check today and yesterday for current streak
+  for (let i = 0; i < 365; i++) {
+    const ds = formatDate(check);
+    if (logDates.has(ds) && (habitData.log[ds]||[]).length > 0) {
+      cur++;
+    } else {
+      if (i === 0) { check.setDate(check.getDate()-1); continue; } // skip today if not logged yet
+      break;
+    }
+    check.setDate(check.getDate()-1);
+  }
+  streak = cur;
+
+  // best streak
+  const allDates = Object.keys(habitData.log).filter(d => (habitData.log[d]||[]).length > 0).sort();
+  let runBest = 0, runCur2 = 0, prev = null;
+  allDates.forEach(ds => {
+    const d = parseDate(ds);
+    if (prev) {
+      const diff = (d - prev) / 86400000;
+      if (diff === 1) runCur2++;
+      else runCur2 = 1;
+    } else { runCur2 = 1; }
+    if (runCur2 > runBest) runBest = runCur2;
+    prev = d;
+  });
+
+  document.getElementById('stat-streak').textContent = streak;
+  document.getElementById('stat-best').textContent = runBest;
+}
+
+function buildHabitCards() {
+  const grid = document.getElementById('habits-grid');
+  grid.innerHTML = '';
+
+  if (habitData.habits.length === 0) {
+    grid.innerHTML = '<div class="no-data"><strong>No habits defined</strong>Add a "habits" array to habits.json</div>';
+    return;
+  }
+
+  habitData.habits.forEach(h => {
+    const color = habitColors[h];
+
+    // streak for this habit
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    let streak = 0;
+    const check = new Date(today);
+    for (let i = 0; i < 365; i++) {
+      const ds = formatDate(check);
+      const done = habitData.log[ds] || [];
+      if (done.includes(h)) {
+        streak++;
+      } else {
+        if (i === 0) { check.setDate(check.getDate()-1); continue; }
+        break;
+      }
+      check.setDate(check.getDate()-1);
+    }
+
+    const card = document.createElement('div');
+    card.className = 'habit-card';
+    card.innerHTML = `
+      <div class="habit-color-dot" style="background:${color}"></div>
+      <div class="habit-card-name">${h}</div>
+      <div class="habit-card-streak"><span>${streak}</span>d</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function updateMeta() {
+  const today = new Date();
+  const meta = document.getElementById('header-meta');
+  meta.innerHTML = `${today.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}<br><span>${habitData.habits.length}</span> habits tracked`;
+}
+
+loadData();
+</script>
+</body>
+</html>
